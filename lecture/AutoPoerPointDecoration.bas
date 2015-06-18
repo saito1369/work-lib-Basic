@@ -3104,6 +3104,11 @@ Private Sub fileContents(sNotesFilePath As String, sContent As String)
 End Sub
 
 Private Function filePath(Fname As String) As String
+  Fname=Replace(Fname,"/",Application.PathSeparator)
+End Function
+
+End Function
+Private Function filePath_org(Fname As String) As String
   Dim Op As Variant
   Op = Application.OperatingSystem
   If Op Like "Macintosh*" Then
