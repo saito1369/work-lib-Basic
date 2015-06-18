@@ -753,6 +753,11 @@ Private Sub notesFilePath (sNotesFilePath As String, sCurrentFolder As String, s
     sNotesFilePath = sCurrentFolder & sNoteFileName
   Else
     sNotesFilePath = sNotesFileName  ' 絶対パスで書いてある場合
+    If Op Like "Macintosh*" Then     ' Mac の場合(何かいい方法ないんだろーか?)
+      If InStr(sNotesFilePath, "Macintosh")=0 Then
+        sNotesFilePath = "Macintosh HD" & sNotesFilePath
+      End If
+    End If
   End If
   ' is it there? quit if not
   'sNotesFilePath = sCurrentFolder & sNotesFileName
@@ -943,6 +948,7 @@ Private Sub bufRead_File(sBuf As Variant, Desgns() As Integer, Fnames() As Strin
 
   Dim aBuf() As String
   aBuf = Split(sBuf,vbNewLine) ' 一行ずつ分割
+  'aBuf = Split(sBuf,vbCrLf)
 
   Dim fnum     As Integer
   Dim Pdummy() As String
@@ -3104,11 +3110,7 @@ Private Sub fileContents(sNotesFilePath As String, sContent As String)
 End Sub
 
 Private Function filePath(Fname As String) As String
-  Fname=Replace(Fname,"/",Application.PathSeparator)
-End Function
-
-End Function
-Private Function filePath_org(Fname As String) As String
+  Fname = Replace(Fname,"/","\")
   Dim Op As Variant
   Op = Application.OperatingSystem
   If Op Like "Macintosh*" Then
