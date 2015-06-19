@@ -279,7 +279,7 @@ End Sub
 ' offset •â³‚µ‚½ text file ‚ğ‘‚«o‚µ‚Ü‚·.
 Private Sub offsetPrint(sFilePath As String, hBufs, offset() As Integer, Optional pExist As Variant)
   '''Set nBufs   = New Dictionary ' “Ç‚İ‚ñ‚¾•¶š—ñ
-  Set hBufs=CreateObject("Scripting.Dictionary")
+  Set nBufs=CreateObject("Scripting.Dictionary")
   Call offsetHash(hBufs,nBufs,offset(),pExist)
   Call hashPrint(nBufs,sFilePath)
 End Sub
@@ -3085,7 +3085,7 @@ Public Sub write_txt_ListContents()
   Else
     MsgBox("do nothing")
   End If
-  
+
 End Sub
 
 ' •¶š‰»‚¯‚ğS”z‚µ‚È‚­‚Ä—Ç‚¢‚Æ‚«
