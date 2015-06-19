@@ -124,7 +124,8 @@ Public Sub pv_0010_grayTOC()
   Dim sCurrentFolder As String
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
-  Set hBufs   = New Dictionary ' 読み込んだ文字列
+  '''Set hBufs   = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   ' iNc***(1 から hire, 1 から page 数) の二次元配列
@@ -277,7 +278,8 @@ End Sub
 
 ' offset 補正した text file を書き出します.
 Private Sub offsetPrint(sFilePath As String, hBufs, offset() As Integer, Optional pExist As Variant)
-  Set nBufs   = New Dictionary ' 読み込んだ文字列
+  '''Set nBufs   = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call offsetHash(hBufs,nBufs,offset(),pExist)
   Call hashPrint(nBufs,sFilePath)
 End Sub
@@ -366,7 +368,8 @@ Private Sub add_grayTOC(iNcIdx() As String, iNcTtl() As String, iNcToc() As Stri
           Set oTxtRng = ActivePresentation.Slides(pageo).Shapes(2).TextFrame.TextRange
           Dim toc As Variant
           ' +2 同じページに複数の項目の説明があることを想定する場合(同じ hierarchy でページ数が同じ)
-          Set hsh=New Dictionary  ' +2
+          '''Set hsh=New Dictionary  ' +2
+          Set hsh=CreateObject("Scripting.Dictionary")
           Dim k As Variant                              ' +2
           'MsgBox("hier=" & hier & " page=" & page & " idx=" & iNcIdx(hier,page))
           For Each k In Split(iNcIdx(hier,page),vbNewLine)                ' +2
@@ -790,7 +793,8 @@ Public Sub pv_0000_collectPpt()
   Dim sCurrentFolder As String
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
-  Set hBufs = New Dictionary
+  '''Set hBufs = New Dictionary
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   ' ファイル情報の取得
@@ -855,7 +859,8 @@ End Sub
 ' いくつかの text file について offset 補正し,
 ' 統合テキストファイルを作成します.
 Private Sub offsetInteg (Fname() As String, Pagesc() As String, delm As String, sttIns() As Integer, sFilePath As String)
-  Set nBufs = New Dictionary ' hash
+  '''Set nBufs = New Dictionary ' hash
+  Set nBufs=CreateObject("Scripting.Dictionary")
   Dim m As Integer
   m = UBound(Fname)
   For k = 0 To m
@@ -903,7 +908,8 @@ Private Sub offset_Intg(nBufs,Fname As String, Pagesc As String, delm As String,
   Dim sNotesFilePath As String
   Dim sCurrentFolder As String
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,0,Fname)
-  Set hBufs   = New Dictionary ' 読み込んだ文字列
+  '''Set hBufs   = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs,1)  ' 最後の引数 =1 ファイル無くてもそのまま進む.
   Dim Prng As String
   Call joinInt(Prng,pExist(),",")
@@ -1312,7 +1318,8 @@ Private Sub skipSlides(iSkip() As Integer, ByRef npage0 As Integer, ByRef npage 
     Dim sNotesFilePath As String
     Dim sCurrentFolder As String
     Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",0,1)
-    Set hBufs = New Dictionary ' 読み込んだ文字列
+    '''Set hBufs = New Dictionary ' 読み込んだ文字列
+    Set hBufs=CreateObject("Scripting.Dictionary")
     Call fileRead2(sNotesFilePath,hBufs)
     Dim nSids()  As Integer
     Call bufRead_nList(hBufs(SKIP_MARK),nSids(),C_CMM) ' vbTab -> ","
@@ -1375,7 +1382,8 @@ Public Sub pv_0013_pageListContents2()
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
   ' file reading
-  Set hBufs   = New Dictionary ' 読み込んだ文字列
+  '''Set hBufs   = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   ' 目次として書きだす内容とページ数
@@ -1558,7 +1566,8 @@ Private Sub bufRead_TOC2pList(sBuf As Variant,Conts() As String, Pagesc() As Str
     If hier< Len(tBuf(0)) Then hier=Len(tBuf(0))
   Next j
 
-  Set hbef = New Dictionary
+  '''Set hbef = New Dictionary
+  Set hbef=CreateObject("Scripting.Dictionary")
   Dim stt() As Integer
   Dim edd() As Integer
   Dim sForm() As String
@@ -1870,7 +1879,8 @@ Public Sub pv_0014_pageListHierarchy2()
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
   ' file reading
-  Set hBufs   = New Dictionary ' 読み込んだ文字列
+  '''Set hBufs   = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   ' 目次として書きだす内容とページ数
@@ -2023,7 +2033,8 @@ Private Sub flipTextForStudy(student As Integer)
   ActivePresentation.SaveAs (sCurrentFolder & sPptFileName)
 
   ' file reading
-  Set hBufs   = New Dictionary ' 読み込んだ文字列
+  '''Set hBufs   = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   Dim fString() As String ' 置換元
@@ -2906,13 +2917,14 @@ Public Sub source_copy()
   Dim sNotesFilePath As String
   Dim sCurrentFolder As String
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
-  
-  Set hBufs = New Dictionary ' 読み込んだ文字列
+
+  '''Set hBufs = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
   ' java file 名の取得
   Dim jFiles() As String 
   jFiles= Split(hBufs(SOUR_MARK),vbNewLine)
-  
+
   Dim i As Integer
   For i= 0 To UBound(jFiles)
     Dim page As Integer
@@ -2961,7 +2973,8 @@ Public Sub write_txt_down_hierarchy()
   Dim sCurrentFolder As String
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
-  Set hBufs   = New Dictionary ' 読み込んだ文字列
+  '''Set hBufs   = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   Dim aBuf() As String
@@ -3010,30 +3023,31 @@ Public Sub write_txt_ListContents()
   ' のリストを自動でとってくる
   ' ListContents で書かせる階層を指定する
   '
-  
+
   Dim npage As Integer
   npage = ActivePresentation.Slides.Count
-  
+
   Dim maxH As Integer
   maxH = C_MAXH
   If MsgBox("the hire num of ListContents TOC: " & maxH & " ?",vbYesNo) = vbNo Then
     maxH = InputBox("the hierarchy number: ",maxH)
   End If
-  
+
   ' text file(path) の取得
   Dim sNotesFilePath As String
   Dim sCurrentFolder As String
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
-  Set hBufs   = New Dictionary ' 読み込んだ文字列
+  '''Set hBufs   = New Dictionary ' 読み込んだ文字列
+  Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
-  
+
   Dim aBuf() As String
   aBuf()=Split(hBufs(GTOC_MARK),vbNewLine)
-  
+
   Dim m As Integer
   m = UBound(aBuf)
-  
+
   Dim j      As Integer
   Dim pnum() As Integer
   ReDim pnum(maxH)
