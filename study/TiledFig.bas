@@ -10,7 +10,7 @@ Sub addPictures()
   ' 1    test.png    0.0     2.5    2.5
   ' 1    test2.png   12.0    2.5    2.5
   '
-  
+
   Dim delm As String
   Dim os   As Integer
   os = 0
@@ -73,13 +73,16 @@ Sub addPictures()
       Dim Fname As String
       Fname = aBuf(1)
       If os = 1 Then  'mac
-        Fname = Replace(Fname,"\",":")
+        Fname = Replace(Fname,"\",delm)
+        Fname = Replace(Fname,"/",delm)
         ' ファイル名だけ書いてある場合は, カレントディレクトリだと仮定する.
-        If InStr(Fname, ":") = 0 Then Fname = sCurrentFolder & Fname
+        If InStr(Fname, delm) = 0 Then Fname = sCurrentFolder & Fname
       Else 'win
         ' 基本的には, フォルダ区切りは windows 形式で書くことにする.
-        'Fname = Replace(Fname, ":","\")
-        If InStr(Fname, "\") = 0 Then Fname = sCurrentFolder & Fname
+        'Fname = Replace(Fname, ":",delm)
+        'If InStr(Fname, delm) = 0 Then Fname = sCurrentFolder & Fname
+        ' これだとうまくいった. Why ? 2015/06/30
+        Fname = sCurrentFolder & Fname
       End If
       Fnames(fnum)=Fname
       fnum = fnum + 1
@@ -89,7 +92,7 @@ Sub addPictures()
 
   Dim Pptt As Presentation
   Set Pptt = Application.ActivePresentation
-  
+
   Dim k As Long
   For k = 0 To UBound(Pages)
     Dim ShapeObj As Shape
@@ -97,7 +100,7 @@ Sub addPictures()
     Dim ptop     As Single
     pleft = lefts(k)/ 0.3528 * 10.0  ' cm -> points
     ptop  = tops(k) / 0.3528 * 10.0
-    
+
     ' slide が無ければ追加する 2015/04/16
     Dim SlideObj As Slide
     If Pages(k) <= Pptt.Slides.Count Then  ' Pptt.Slides.Count = スライドの枚数
