@@ -86,17 +86,146 @@ Private Const C_LWID      As Integer = 5      ' watermarkSlide 線の太さ
 'Private Const WHITE = RGB(255,255,255)
 'Private Const GREEN = RGB(0,150,0)
 
-Public Sub pv_000_standard()
-  Call pv_0000_collectPpt()
-  Call pv_0010_grayTOC()
-  Call pv_0011_pageCountsBox2()
-  Call pv_0012_pageNum2()
-  Call pv_0013_pageListContents2()
-  Call pv_0014_pageListHierarchy2()
+' GFLAG=0 skip dialog
+' GFLAG=1 dialog to confirm and change parameters
+
+Public Sub p0_standard() ' skip dialog
+  collectPpt(0)
+  grayTOC(0)
+  pageCountsBox2(0)
+  pageNum2(0)
+  pageListContents2(0)
+  pageListHierarchy2(0)
+End Sub
+
+Public Sub p00_collectPpt()
+  collectPpt(1)
+End Sub
+
+Public Sub p01_grayTOC()
+  grayTOC(1)
+End Sub
+
+Public Sub p02_pageCountsBox()
+  pageCountsBox2(1)
+End Sub
+
+Public Sub p03_pageNum()
+  pageNum2(1)
+End Sub
+
+Public Sub p04_pageListContents()
+  pageListContents2(1)
+End Sub
+
+Public Sub p05_pageListHierarchy()
+  pageListHierarchy2(1)
+End Sub
+
+Public Sub p6_flipTextForStudent()
+  Call flipTextForStudy(1,0)
+End Sub
+
+Public Sub p7_watermarkForLecture()
+  Call flipTextForStudy(0,0)
+End Sub
+
+Public Sub p8_removeGrayTOC_asNewName()
+  removeGrayTOC_asNewName(0)
 End Sub
 
 
-Public Sub pv_0010_grayTOC()
+' text file に 使う powerpoint ファイルとそのページ数を指定しておくと,
+' これを動かすことで指定したスライドが今の powerpoint ファイルに取り込まれます.
+' NEW: text file があれば, 取り込んだことによるページのずれ(offset)を考慮した
+' 新しい統合された text file を作成します.
+Public Sub collectPpt(GFLAG As Integer)
+
+  ' 設定ファイルを読み込み,
+  ' そこに書かれた他の ppt ファイルと指定したページをコピーする
+  ' 最初の番号 (0 or 1) は, 0 のとき = スタイルはコピーしない. 1 のとき = スタイルもコピー)
+  ' ::+++::
+  ' 0   hoge.ppt    1-3,10,45,44
+  ' 1   fuga.pptx   20,30,50-60
+  ' 1   hoge.ppt    45
+  ' [2018-02-06 Tue]
+
+  Dim sNotesFilePath As String
+  Dim sCurrentFolder As String
+  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,GFLAG)
+
+  '''Set hBufs = New Dictionary
+  Set hBufs=CreateObject("Scripting.Dictionary")
+  Call fileRead2(sNotesFilePath,hBufs)
+
+  ' ファイル情報の取得
+  ' Desgns(N)  コピーの方法(0: スタイルは target ppt 1: スタイルを保持してコピー)
+  ' Fnames(N)  用いる ppt ファイルのリスト
+  ' Pdummy(N)  ページ数を書いたリスト
+  Dim   Desgns() As Integer
+  Dim   Fnames() As String
+  Dim   Pagesc() As String
+  'vbTab で固定("," に変更はできない. Pagesc が"," 区切りなので)
+  Call bufRead_File(hBufs(CPPT_MARK),Desgns(),Fnames(),Pagesc(),C_TBB)
+
+  ' 今開いているスライド
+  Dim pTo  As Presentation
+  Set PTo = Application.ActivePresentation
+
+  ' 保存する資料のファイル名
+  Dim sPptFileName As String
+  spptFileName = newFileName("_intg.pptm","do you want to save the file as ",GFLAG) ' [2018-02-06 Tue]
+
+  ' 別名で上書き保存
+  ' ここからはこのファイルが Active となるので注意する.
+  ' [2018-02-06 Tue]
+  Dim yvb As Integer
+  If GFLAG = 1 Then
+    yvb = MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo)
+  Else
+    yvb = vbYes
+  End If
+  'If MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo) = vbNo Then
+  If yvb = vbNo Then
+    Exit Sub
+  End If
+  ActivePresentation.SaveAs (sCurrentFolder & sPptFileName)
+
+  Dim m As Integer
+  m = UBound(Fnames)
+
+  Dim sttIns() As Integer
+  ReDim sttIns(m)
+
+  ' ppt ファイルの取り込み
+  Dim k As Integer
+  For k = 0 To m
+    Dim pFr As Presentation ' ppt ファイルを開きます.
+    Set pFr = Presentations.Open(FileName:=Fnames(k),ReadOnly:=msoFalse)
+    Dim sttIn As Integer
+    'sttIn = ActivePresentation.Slides.Count + 1 ' paste されるページの最初のページ
+    'sttIn    = pTo.Slides.Count + 1  ' paste されるページの最初のページ
+    sttIn    = pTo.Slides.Count  ' paste されるページの最初のページ  ' 2014/03/24
+    'MsgBox("sttIn = " & sttIn)
+    sttIns(k)=sttIn
+    If Desgns(k) = 0 Then
+      Call copySlide(pFr,pTo,Pagesc(k),C_CMM)
+    Else
+      Call copySlide_Fmt(pFr,pTo,Pagesc(k),C_CMM)
+    End If
+  Next k
+
+  ' 統合 text file の作成
+  Dim sItgFilePath   As String
+  'Call notesFilePath(sItgFilePath,sCurrentFolder,"_intg.txt",0,1)
+  Call notesFilePath(sItgFilePath,sCurrentFolder,".txt",0,GFLAG) ' 2014/04/06
+  Call offsetInteg(Fnames(),Pagesc(),C_CMM,sttIns(),sItgFilePath)
+
+  ActivePresentation.SaveAs (sCurrentFolder & sPptFileName)
+
+End Sub
+
+Public Sub grayTOC(GFLAG As Integer)
   ' 階層目次の指示が書かれた設定ファイル(text file)を読み込み,
   ' 階層目次(灰色)を然るべきページに追加して別ファイルとして保存する.
   ' 追加するとページ数がずれるので, ずれを補正して保存した別ファイルの設定ファイルとして保存する.
@@ -122,7 +251,7 @@ Public Sub pv_0010_grayTOC()
   ' text file(path) の取得
   Dim sNotesFilePath As String
   Dim sCurrentFolder As String
-  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
+  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,GFLAG)
 
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
   Set hBufs=CreateObject("Scripting.Dictionary")
@@ -140,10 +269,18 @@ Public Sub pv_0010_grayTOC()
   Call bufRead_TOC(hBufs(GTOC_MARK),iNcIdx(),iNcTtl(),iNcToc(),iNcOff(),C_TBB)
 
   Dim sPptFileName As String
-  sPptFileName=newFileName("_gray.pptm","do you want to save the file As ",1)
+  sPptFileName=newFileName("_gray.pptm","do you want to save the file As ",GFLAG)
   ' 別名で上書き保存
   ' ここからはこのファイルが Active となるので注意する.
-  If MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo) = vbNo Then
+  ' [2018-02-06 Tue]
+  Dim yvb As Integer
+  If GFLAG = 1 Then
+    yvb = MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo)
+  Else
+    yvb = vbYes
+  End If
+  'If MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo) = vbNo Then
+  If yvb = vbNo Then
     Exit Sub
   End If
   ActivePresentation.SaveAs (sCurrentFolder & sPptFileName)
@@ -157,7 +294,7 @@ Public Sub pv_0010_grayTOC()
 
   Dim sGrayFilePath As String
   Dim sGrayFileName As String
-  sGrayFileName=newFileName(".txt","do you want to save the file As ",1)
+  sGrayFileName=newFileName(".txt","do you want to save the file As ",GFLAG)
   sGrayFilePath = sCurrentFolder & sGrayFileName
   'Call offsetPrint(sGrayFilePath,hBufs,offset(),Nothing)
   Call offsetPrint(sGrayFilePath,hBufs,offset()) '2014/04/06
@@ -183,10 +320,10 @@ Public Sub resizeFontSizeOfGrayTOC()
   'Blk=RGB(0,0,0)
   Dim Fsize As Integer
   Dim Tsize As Integer
-  
+
   Fsize = C_FSIZE_TOC
   Tsize = C_TSIZE_TOC
-  
+
   If MsgBox("font resize for gray TOC to " & Fsize & " ?",vbYesNo) = vbNo Then
     Fsize = InputBox("Input new font size for gray TOC",Fsize)
   End If
@@ -216,7 +353,7 @@ Public Sub resizeFontSizeOfGrayTOC()
   Next i
 End Sub
 
-Public Sub pv_1000_removeGrayTOC_asNewName() 'for print (pdf) hand out
+Public Sub removeGrayTOC_asNewName(GFLAG As Integer) 'for print (pdf) hand out
   Dim npage As Integer
   npage = ActivePresentation.Slides.Count
   Dim i As Integer
@@ -226,13 +363,20 @@ Public Sub pv_1000_removeGrayTOC_asNewName() 'for print (pdf) hand out
       ActivePresentation.Slides(i).Delete
     End If
   Next i
-  
+
   Dim sNotesFilePath As String ' dummy
   Dim sCurrentFolder As String
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",0,0)
   Dim sPptFileName As String
-  spptFileName = newFileName("_delTOC.pptm","do you want to save the file as ",1)
-  If MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo) = vbNo Then
+  spptFileName = newFileName("_delTOC.pptm","do you want to save the file as ",GFLAG)
+  Dim yvb As Integer
+  If GFLAG = 1 Then
+    yvb = MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo)
+  Else
+    yvb = vbYes
+  End If
+  'If MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo) = vbNo Then
+  If yvb = vbNo Then
     Exit Sub
   End If
   ActivePresentation.SaveAs (sCurrentFolder & sPptFileName)
@@ -740,14 +884,14 @@ Private Sub notesFilePath (sNotesFilePath As String, sCurrentFolder As String, s
   ' 設定 text file
   sCurrentFolder = ActivePresentation.Path & delm
   ' mflg = 1 確認 MsgBox を表示する
-  sNotesFileName = newFileName(suffix,"do you want to use the file",mflg,Fname)
+  sNotesFileName = newFileName(suffix,"do you want to use the file ",mflg, Fname)
 
   sNotesFileName = Replace(sNotesFileName,"\",delm)
-  
+
   'MsgBox("Fname=" & Fname)
   'MsgBox("sNotesFileName=" & sNotesFileName)
   'MsgBox("sCurrentFolder=" & sCurrentFolder)
-  
+
   If InStr(sNotesFileName, delm) = 0 Then
     sNotesFilePath = sCurrentFolder & sNotesFileName
   'ElseIf Left$(sNotesFileName,2) = "." & delm Then  ' 2014/04/11 削除
@@ -775,86 +919,6 @@ Private Sub notesFilePath (sNotesFilePath As String, sCurrentFolder As String, s
 
 End Sub
 
-' text file に 使う powerpoint ファイルとそのページ数を指定しておくと,
-' これを動かすことで指定したスライドが今の powerpoint ファイルに取り込まれます.
-' NEW: text file があれば, 取り込んだことによるページのずれ(offset)を考慮した
-' 新しい統合された text file を作成します.
-Public Sub pv_0000_collectPpt()
-
-  ' 設定ファイルを読み込み,
-  ' そこに書かれた他の ppt ファイルと指定したページをコピーする
-  ' 最初の番号 (0 or 1) は, 0 のとき = スタイルはコピーしない. 1 のとき = スタイルもコピー)
-  ' ::+++::
-  ' 0   hoge.ppt    1-3,10,45,44
-  ' 1   fuga.pptx   20,30,50-60
-  ' 1   hoge.ppt    45
-
-  Dim sNotesFilePath As String
-  Dim sCurrentFolder As String
-  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
-
-  '''Set hBufs = New Dictionary
-  Set hBufs=CreateObject("Scripting.Dictionary")
-  Call fileRead2(sNotesFilePath,hBufs)
-
-  ' ファイル情報の取得
-  ' Desgns(N)  コピーの方法(0: スタイルは target ppt 1: スタイルを保持してコピー)
-  ' Fnames(N)  用いる ppt ファイルのリスト
-  ' Pdummy(N)  ページ数を書いたリスト
-  Dim   Desgns() As Integer
-  Dim   Fnames() As String
-  Dim   Pagesc() As String
-  'vbTab で固定("," に変更はできない. Pagesc が"," 区切りなので)
-  Call bufRead_File(hBufs(CPPT_MARK),Desgns(),Fnames(),Pagesc(),C_TBB)
-
-  ' 今開いているスライド
-  Dim pTo  As Presentation
-  Set PTo = Application.ActivePresentation
-  
-  ' 保存する資料のファイル名
-  Dim sPptFileName As String
-  spptFileName = newFileName("_intg.pptm","do you want to save the file as ",1)
-
-  ' 別名で上書き保存
-  ' ここからはこのファイルが Active となるので注意する.
-  If MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo) = vbNo Then
-    Exit Sub
-  End If
-  ActivePresentation.SaveAs (sCurrentFolder & sPptFileName)
-
-  Dim m As Integer
-  m = UBound(Fnames)
-
-  Dim sttIns() As Integer
-  ReDim sttIns(m)
-
-  ' ppt ファイルの取り込み
-  Dim k As Integer
-  For k = 0 To m
-    Dim pFr As Presentation ' ppt ファイルを開きます.
-    Set pFr = Presentations.Open(FileName:=Fnames(k),ReadOnly:=msoFalse)
-    Dim sttIn As Integer
-    'sttIn = ActivePresentation.Slides.Count + 1 ' paste されるページの最初のページ
-    'sttIn    = pTo.Slides.Count + 1  ' paste されるページの最初のページ
-    sttIn    = pTo.Slides.Count  ' paste されるページの最初のページ  ' 2014/03/24
-    'MsgBox("sttIn = " & sttIn)
-    sttIns(k)=sttIn
-    If Desgns(k) = 0 Then
-      Call copySlide(pFr,pTo,Pagesc(k),C_CMM)
-    Else
-      Call copySlide_Fmt(pFr,pTo,Pagesc(k),C_CMM)
-    End If
-  Next k
-
-  ' 統合 text file の作成
-  Dim sItgFilePath   As String
-  'Call notesFilePath(sItgFilePath,sCurrentFolder,"_intg.txt",0,1)
-  Call notesFilePath(sItgFilePath,sCurrentFolder,".txt",0,1) ' 2014/04/06
-  Call offsetInteg(Fnames(),Pagesc(),C_CMM,sttIns(),sItgFilePath)
-
-  ActivePresentation.SaveAs (sCurrentFolder & sPptFileName)
-
-End Sub
 
 ' いくつかの text file について offset 補正し,
 ' 統合テキストファイルを作成します.
@@ -1115,7 +1179,7 @@ End Sub
 ' 無視ページ "::---::"
 ' 及び gray 目次ページは
 ' 無視します.
-Public Sub pv_0011_pageCountsBox2()
+Public Sub pageCountsBox2(GFLAG As Integer)
 
   ' text file を読み込んで page 番号を付けないものを指定
   ' page 番号を付けないもの: "::---::" で書かれたページ
@@ -1151,11 +1215,11 @@ Public Sub pv_0011_pageCountsBox2()
   Dim iSkip() As Integer
   Dim npage0  As Integer  ' スライド枚数
   Dim npage   As Integer  ' skip を除いたスライド枚数
-  Call skipSlides(iSkip(),npage0,npage)
-  
+  Call skipSlides(iSkip(), npage0, npage, GFLAG) ' [2018-02-06 Tue] add GFLAG
+
   Dim ShapeList() As String
   ReDim ShapeList(npage)
-  
+
   Dim page As Integer
   page = 0
   Dim i As Integer
@@ -1218,7 +1282,7 @@ End Sub
 ' 無視ページ "::---::"
 ' 及び gray 目次ページは
 ' 無視します.
-Public Sub pv_0012_pageNum2()
+Public Sub pageNum2(GFLAG As Integer)
 
   ' text file を読み込んで page 番号を付けないものを指定
   ' page 番号を付けないもの: "::---::" で書かれたページ
@@ -1249,7 +1313,7 @@ Public Sub pv_0012_pageNum2()
   Dim iSkip() As Integer
   Dim npage0  As Integer  ' スライド枚数
   Dim npage   As Integer  ' skip を除いたスライド枚数
-  Call skipSlides(iSkip(), npage0, npage) ' iSkip(page)=1 のとき, page 番目のスライドをスキップする
+  Call skipSlides(iSkip(), npage0, npage, GFLAG) ' iSkip(page)=1 のとき, page 番目のスライドをスキップする
 
   Dim page As Integer
   page = 0
@@ -1303,7 +1367,7 @@ Public Sub removePageNum()
 End Sub
 
 ' 無視するページを計算します
-Private Sub skipSlides(iSkip() As Integer, ByRef npage0 As Integer, ByRef npage As Integer)
+Private Sub skipSlides(iSkip() As Integer, ByRef npage0 As Integer, ByRef npage As Integer, mflg As Integer) ' [2018-02-06 Tue] add gFlag
 
   ActivePresentation.Slides(1).Select     ' 一枚目のスライドを選択
   npage0 = ActivePresentation.Slides.Count ' スライドの総数(全部)
@@ -1312,12 +1376,21 @@ Private Sub skipSlides(iSkip() As Integer, ByRef npage0 As Integer, ByRef npage 
   Dim isk As Integer
   isk = 0
 
+  ' [2018-02-06 Tue]
+  Dim yvb As Integer
+  If mflg = 1 Then
+    yvb = MsgBox("do you want to use text file for skip ?",vbYesNo)
+  Else
+    yvb = vbYes
+  End If
+
   ' "::---::" フラグをテキストファイルからとってくるかどうか
-  If MsgBox("do you want to use text file for skip ?",vbYesNo) = vbYes Then
+  'If MsgBox("do you want to use text file for skip ?",vbYesNo) = vbYes Then
+  If yvb = vbYes Then
     ' text file(path) の取得
     Dim sNotesFilePath As String
     Dim sCurrentFolder As String
-    Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",0,1)
+    Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",0,mflg) ' [2018-02-06 Tue]
     '''Set hBufs = New Dictionary ' 読み込んだ文字列
     Set hBufs=CreateObject("Scripting.Dictionary")
     Call fileRead2(sNotesFilePath,hBufs)
@@ -1345,7 +1418,7 @@ End Sub
 
 ' 各々のスライド中に目次を作成し,
 ' 現在どこにあるかを明示します.
-Public Sub pv_0013_pageListContents2()
+Public Sub pageListContents2(GFLAG As Integer)
 
   ' ppt の目次を自動で書き出す.
   ' 各々のページ(右上)に, 今やってる目次の位置を黒い色で,
@@ -1379,7 +1452,7 @@ Public Sub pv_0013_pageListContents2()
   ' text file(path) の取得
   Dim sNotesFilePath As String
   Dim sCurrentFolder As String
-  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
+  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,GFLAG)
 
   ' file reading
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
@@ -1404,9 +1477,16 @@ Public Sub pv_0013_pageListContents2()
   Dim wid0   As Integer
   Dim Fsize0 As Integer
   Dim sizFlg As Integer
+  ' 初期値入れておく
+  xPos0  = C_XPOSR
+  wid0   = C_WIDER
+  Fsize0 = C_FSIZE
   sizFlg = 0
   If Not IsNull(hBufs(IFNT_MARK)) And Not hBufs(IFNT_MARK) = "" Then
     Call bufRead_siz(hBufs(IFNT_MARK),xPos0,wid0,Fsize0)
+    sizFlg = 1
+  End If
+  If GFLAG = 0 Then  ' [2018-02-06 Tue]
     sizFlg = 1
   End If
 
@@ -1431,17 +1511,17 @@ Public Sub pv_0013_pageListContents2()
   Call siz_MsgBox(sizFlg,xPos,wid,Fsize,xPos0,wid0,Fsize0)
 
   ' スライドへ書き出し
-  Call write_TOC(xPos,yPos,wid,hei,Fsize,nSids(),Conts(),Pagesc(),C_CONTENT,1)
+  Call write_TOC(xPos,yPos,wid,hei,Fsize,nSids(),Conts(),Pagesc(),C_CONTENT,1, GFLAG)
 
 End Sub
 
 ' 実際に目次を書き出します
-Private Sub write_TOC(xPos As Integer,yPos As Integer,wid As Integer,hei As Integer,Fsize As Integer,nSids() As Integer,Conts() As String,Pagesc() As String,sName As String, aFlg As Integer)
+Private Sub write_TOC(xPos As Integer,yPos As Integer,wid As Integer,hei As Integer,Fsize As Integer,nSids() As Integer,Conts() As String,Pagesc() As String,sName As String, aFlg As Integer, mflg As Integer)
 
   Dim iSkip() As Integer
   Dim npage0  As Integer  ' スライド枚数
   Dim npage   As Integer  ' skip を除いたスライド枚数
-  Call skipSlides(iSkip(),npage0,npage)
+  Call skipSlides(iSkip(),npage0,npage,mflg)
 
   Dim fSld() As Integer ' 書きだすスライド番号 i fSld(i)=1
   Call checkw_slde(nSids(),fSld(),npage0)
@@ -1824,7 +1904,7 @@ End Sub
 
 ' 各々のスライド中に目次を作成し,
 ' 現在どこにあるかを明示します.
-Public Sub pv_0014_pageListHierarchy2()
+Public Sub pageListHierarchy2(GFLAG As Integer)
 
   ' 2013/05/16
   ' ppt の階層構造を書きだす
@@ -1872,11 +1952,11 @@ Public Sub pv_0014_pageListHierarchy2()
   ' *     1. 背景            1-10
   ' **    1.1. はじめに      1-3
   ' ***   1.1.1. 背景(1)     1,2
-  
+
   ' text file(path) の取得
   Dim sNotesFilePath As String
   Dim sCurrentFolder As String
-  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
+  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,GFLAG)
 
   ' file reading
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
@@ -1904,12 +1984,19 @@ Public Sub pv_0014_pageListHierarchy2()
   Dim wid0   As Integer
   Dim Fsize0 As Integer
   Dim sizFlg As Integer
+  xPos0  = C_XPOSL
+  wid0   = C_WIDEL
+  Fsize0 = C_FSIZE
+
   sizFlg = 0
   If Not IsNull(hBufs(IFHI_MARK)) And Not hBufs(IFHI_MARK) = "" Then
     Call bufRead_siz(hBufs(IFHI_MARK),xPos0,wid0,Fsize0)
     sizFlg = 1
   End If
   'MsgBox("xPos0=" & xPos0 & vbNewLine & "wid0="  & wid0 & vbNewLine & "Fsize0=" & Fsize0)
+  If GFLAG = 0 Then  ' [2018-02-06 Tue]
+    sizFlg = 1
+  End If
 
   Dim xPos  As Integer
   Dim yPos  As Integer
@@ -1936,7 +2023,7 @@ Public Sub pv_0014_pageListHierarchy2()
   Call siz_MsgBox(sizFlg,xPos,wid,Fsize,xPos0,wid0,Fsize0)
 
   ' スライドへ書き出し
-  Call write_TOC(xPos,yPos,wid,hei,Fsize,nSids(),Conts(),Pagesc(),C_HIERARCHY,0)
+  Call write_TOC(xPos,yPos,wid,hei,Fsize,nSids(),Conts(),Pagesc(),C_HIERARCHY,0, GFLAG)
 
 End Sub
 
@@ -1957,23 +2044,13 @@ Public Sub removeListHierarchy()
   Next SlideObj
 End Sub
 
-' 学生用資料を作成します
-Public Sub pv_0100_flipTextForStudent()
-  flipTextForStudy(1)
-End Sub
-
-' 教員用資料を作成します
-Public Sub pv_0200_watermarkForTeacher()
-  flipTextForStudy(0)
-End Sub
-
 ' 教員用資料の作成 sw =0 にしたとき
 '   キーワードが透かしで表示されたスライド
 '   学生用では削除してあるスライドに透かしをいれる
 ' 学生用資料の作成: sw = 1 にしたとき
 '   キーワードが置換されたスライド
 '   答が載っているスライドを削除する
-Private Sub flipTextForStudy(student As Integer)
+Public Sub flipTextForStudy(student As Integer, GFLAG As Integer)
 
   ' このルーチンでは以下を自動で行う:
   ' 1. 学生用に, キーワードが置換(_ 等)されたスライドを作成する.
@@ -2009,7 +2086,7 @@ Private Sub flipTextForStudy(student As Integer)
   ' text file(path) の取得
   Dim sNotesFilePath As String
   Dim sCurrentFolder As String
-  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
+  Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,GFLAG)
 
   ' text file が存在していなければ終了する
   If Len(Dir$(sNotesFilePath)) = 0 Then
@@ -2020,14 +2097,21 @@ Private Sub flipTextForStudy(student As Integer)
   ' 保存する学生用資料のファイル名
   Dim sPptFileName As String
   If student = 1 Then
-    spptFileName = newFileName("_for_student.pptm","do you want to save the file as ",1)
+    spptFileName = newFileName("_for_student.pptm","do you want to save the file as ",GFLAG)
   Else
-    spptFileName = newFileName("_for_teacher.pptm","do you want to save the file as ",1)
+    spptFileName = newFileName("_for_teacher.pptm","do you want to save the file as ",GFLAG)
   End If
 
   ' 別名で上書き保存
   ' ここからはこのファイルが Active となるので注意する.
-  If MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo) = vbNo Then
+  Dim yvb As Integer
+  If GFLAG = 1 Then
+    yvb = MsgBox(ActivePresentation.Name & " will be saved as " & " " & sPptFileName, vbYesNo)
+  Else
+    yvb = vbYes
+  End If
+  'If MsgBox(ActivePresentation.Name & " will be saveed as " & " " & sPptFileName, vbYesNo) = vbNo Then
+  If yvb = vbNo Then
     Exit Sub
   End If
   ActivePresentation.SaveAs (sCurrentFolder & sPptFileName)
