@@ -1,0 +1,18 @@
+# -*- mode: org; coding: utf-8 -*-
+#+TITLE: VBA programs
+#+STARTUP: overview hidestars hideblocks logdone
+#+PROPERTY: results output
+#+PROPERTY: exports both
+#+OPTIONS: \n:t ^:nil TeX:t LaTeX:t
+#+DATE: 2018-03-12
+#+File Created: <2018-03-12 Mon 16:03>\\
+#+Last Updated: <2018-03-12 Mon 16:13>
+
+* lecture/ powerpoint VBA programs for lecture
+  AutoPowerPointDecoration.bas:  main routine
+  Dictionary.cls:  Scripting Directory for mac/windows: see https://github.com/timhall/VBA-Dictionary
+  docs/: https://saito1369.github.io
+  ppts/: powerpoint and setting files (examples)
+* study/ VBA programs for study
+  SaveAllSheetsAsCSVs.bas: Excel VBA to save all sheets as separate csvs
+  TiledFig.bas: powerpoint VBA to add pictures automatically
