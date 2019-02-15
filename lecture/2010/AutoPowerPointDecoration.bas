@@ -155,8 +155,6 @@ Public Sub collectPpt(GFLAG As Integer)
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,GFLAG)
 
   '''Set hBufs = New Dictionary
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
@@ -168,7 +166,7 @@ Public Sub collectPpt(GFLAG As Integer)
   Dim   Fnames() As String
   Dim   Pagesc() As String
   'vbTab で固定("," に変更はできない. Pagesc が"," 区切りなので)
-  Call bufRead_File(hBufs.Item(CPPT_MARK),Desgns(),Fnames(),Pagesc(),C_TBB)   '' [2019-02-15 Fri]
+  Call bufRead_File(hBufs(CPPT_MARK),Desgns(),Fnames(),Pagesc(),C_TBB)
 
   ' 今開いているスライド
   Dim pTo  As Presentation
@@ -256,8 +254,6 @@ Public Sub grayTOC(GFLAG As Integer)
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,GFLAG)
 
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
@@ -270,7 +266,7 @@ Public Sub grayTOC(GFLAG As Integer)
   Dim iNcTtl()  As String
   Dim iNcToc()  As String
   Dim iNcOff()  As Integer
-  Call bufRead_TOC(hBufs.Item(GTOC_MARK),iNcIdx(),iNcTtl(),iNcToc(),iNcOff(),C_TBB)   '' [2019-02-15 Fri]
+  Call bufRead_TOC(hBufs(GTOC_MARK),iNcIdx(),iNcTtl(),iNcToc(),iNcOff(),C_TBB)
 
   Dim sPptFileName As String
   sPptFileName=newFileName("_gray.pptm","do you want to save the file As ",GFLAG)
@@ -388,7 +384,7 @@ Public Sub removeGrayTOC_asNewName(GFLAG As Integer) 'for print (pdf) hand out
 End Sub
 
 ' hBufs を offset にもとづいて補正した hash string (nBufs) を返します.
-Private Sub offsetHash(hBufs As Object, nBufs As Object, offset() As Integer, Optional pExist As Variant)
+Private Sub offsetHash(hBufs, nBufs, offset() As Integer, Optional pExist As Variant)
 
   Dim keys() As Variant
   keys = hBufs.Keys
@@ -398,25 +394,25 @@ Private Sub offsetHash(hBufs As Object, nBufs As Object, offset() As Integer, Op
     Dim sBuf As String
     If key = GTOC_MARK Then
       sBuf=""  ' 何でかよくわからない. scope が効いてないのか ?
-      Call bufWrit_TOC(sBuf,hBufs.Item(key),C_TBB,offset(),pExist)   '' [2019-02-15 Fri]
+      Call bufWrit_TOC(sBuf,hBufs(key),C_TBB,offset(),pExist)
     ElseIf key = CPPT_MARK Then
       sBuf=""
-      Call bufWrit_File(sBuf,hBufs.Item(key),C_TBB,offset(),pExist)  '' [2019-02-15 Fri]
+      Call bufWrit_File(sBuf,hBufs(key),C_TBB,offset(),pExist)
     ElseIf key = TOCS_MARK Or key = TOHI_MARK Then
       sBuf=""
-      Call bufWrit_pList(sBuf,hBufs.Item(key),C_TBB,offset(),pExist)  '' [2019-02-15 Fri]
+      Call bufWrit_pList(sBuf,hBufs(key),C_TBB,offset(),pExist)
     ElseIf key = NOWT_MARK Or key = NOHI_MARK Or key =DELS_MARK Or key = ALIV_MARK Or key = SKIP_MARK Then
       sBuf=""
-      Call bufWrit_nList(sBuf,hBufs.Item(key),C_CMM,offset(),pExist)   '' [2019-02-15 Fri]
+      Call bufWrit_nList(sBuf,hBufs(key),C_CMM,offset(),pExist)
     ElseIf key = FLIP_MARK Then
       sBuf=""
-      Call bufWrit_exList(sBuf,hBufs.Item(key),C_TBB,offset(),pExist)   '' [2019-02-15 Fri]
+      Call bufWrit_exList(sBuf,hBufs(key),C_TBB,offset(),pExist)
     ElseIf key = IFNT_MARK Or key = IFHI_MARK Then
       sBuf=""
-      Call bufWrit_siz(sBuf,hBufs.Item(key))   '' [2019-02-15 Fri]
+      Call bufWrit_siz(sBuf,hBufs(key))
     End If
     If nBufs.Exists(key) Then
-      nBufs.Item(key) = nBufs.Item(key) & vbNewLine & sBuf    '' [2019-02-15 Fri]
+      nBufs(key) = nBufs(key) & vbNewLine & sBuf
     Else
       nBufs.Add key,sBuf
     End If
@@ -425,17 +421,15 @@ Private Sub offsetHash(hBufs As Object, nBufs As Object, offset() As Integer, Op
 End Sub
 
 ' offset 補正した text file を書き出します.
-Private Sub offsetPrint(sFilePath As String, hBufs As Object, offset() As Integer, Optional pExist As Variant)
+Private Sub offsetPrint(sFilePath As String, hBufs, offset() As Integer, Optional pExist As Variant)
   '''Set nBufs   = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim nBufs As Object
   Set nBufs=CreateObject("Scripting.Dictionary")
   Call offsetHash(hBufs,nBufs,offset(),pExist)
   Call hashPrint(nBufs,sFilePath)
 End Sub
 
 ' hash で得られた String を決まった format で書き出します
-Private Sub hashPrint(hash As Object, sFilePath As String)
+Private Sub hashPrint(hash, sFilePath As String)
   Dim keys() As Variant
   keys = hash.Keys
   Dim key As Variant
@@ -443,8 +437,8 @@ Private Sub hashPrint(hash As Object, sFilePath As String)
   Dim prnt As String
   For Each key In keys
     prnt = prnt & INFO_MARK & key & INFO_MARK & vbNewLine
-    prnt = prnt & hash.Item(key)         & vbNewLine    '' [2019-02-15 Fri]
-    'MsgBox("key= " & key & vbTab & "value = " & hash.Item(key))
+    prnt = prnt & hash(key)         & vbNewLine
+    'MsgBox("key= " & key & vbTab & "value = " & hash(key))
   Next key
 
   Dim iFileNum As Integer
@@ -519,8 +513,6 @@ Private Sub add_grayTOC(iNcIdx() As String, iNcTtl() As String, iNcToc() As Stri
           Dim toc As Variant
           ' +2 同じページに複数の項目の説明があることを想定する場合(同じ hierarchy でページ数が同じ)
           '''Set hsh=New Dictionary  ' +2
-          '' [2019-02-15 Fri]
-          Dim hsh As Object
           Set hsh=CreateObject("Scripting.Dictionary")
           Dim k As Variant                              ' +2
           'MsgBox("hier=" & hier & " page=" & page & " idx=" & iNcIdx(hier,page))
@@ -540,7 +532,7 @@ Private Sub add_grayTOC(iNcIdx() As String, iNcTtl() As String, iNcToc() As Stri
               .Text = toc & vbNewLine
               ' すぐ次のページで説明する項目 = 黒で
               'If iNcIdx(hier,page) = idx Then ' +1 想定しない場合 '+1
-              If hsh.Item(idx) = 1 Then             ' 想定する場合   '+2    '' [2019-02-15 Fri]
+              If hsh(idx) = 1 Then             ' 想定する場合   '+2
                 .Font.Color.RGB=Blk
                 sname2 = sname2 & "_" & toc
               Else
@@ -587,10 +579,7 @@ End Function
 ' を用いて, 階層目次(for 灰色目次)を新しくして書き出します.
 Private Sub bufWrit_TOC(prnt As String, sBuf As Variant, delm As String, offset() As Integer, Optional pExist As Variant)
 
-  'If Sgn(offset) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not offset Then
-    ' do nothing
-  Else
+  If Sgn(offset) = 0 Then
     If Not IsNull(sBuf) And Not sBuf = "" Then
       prnt = prnt & sBuf & vbNewLine
     End If
@@ -844,7 +833,7 @@ End Sub
 ' text file を読み込んで hash に格納します
 ' String として読み込むだけ.
 ' nock が 1 の時は, ファイルの存在を確認しない(無ければそのまま終わる)
-Private Sub fileRead2(sNotesFilePath As String, hBufs As Object, Optional nock As Integer)
+Private Sub fileRead2(sNotesFilePath As String, hBufs, Optional nock As Integer)
 
   If nock = 1 And Dir(sNotesFilePath) = "" Then
     Exit Sub
@@ -866,7 +855,7 @@ Private Sub fileRead2(sNotesFilePath As String, hBufs As Object, Optional nock A
     Else
       If Not IsNull(MARK) And Not MARK = "" Then
         If hBufs.Exists(MARK) Then
-          hBufs.Item(MARK) = hBufs.Item(MARK) & vbNewLine & sBuf     '' [2019-02-15 Fri]
+          hBufs(MARK) = hBufs(MARK) & vbNewLine & sBuf
         Else
           hBufs.Add MARK,sBuf
         End If
@@ -935,8 +924,6 @@ End Sub
 ' 統合テキストファイルを作成します.
 Private Sub offsetInteg (Fname() As String, Pagesc() As String, delm As String, sttIns() As Integer, sFilePath As String)
   '''Set nBufs = New Dictionary ' hash
-  '' [2019-02-15 Fri]
-  Dim nBufs As Object
   Set nBufs=CreateObject("Scripting.Dictionary")
   Dim m As Integer
   m = UBound(Fname)
@@ -948,7 +935,7 @@ End Sub
 
 ' 取り込むページのリストと現在のページ数から,
 ' offset() の値と pExit() を計算します.
-Private Sub offset_Intg(nBufs As Object, Fname As String, Pagesc As String, delm As String, sttIn As Integer)
+Private Sub offset_Intg(nBufs,Fname As String, Pagesc As String, delm As String, sttIn As Integer)
 
   Dim Pages() As Integer
   Call sList2iList(Pagesc,Pages(),delm)
@@ -986,8 +973,6 @@ Private Sub offset_Intg(nBufs As Object, Fname As String, Pagesc As String, delm
   Dim sCurrentFolder As String
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,0,Fname)
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs,1)  ' 最後の引数 =1 ファイル無くてもそのまま進む.
   Dim Prng As String
@@ -999,10 +984,7 @@ End Sub
 ' collectPpt 用の情報を書き出します.
 Private Sub bufWrit_File(prnt As String, sBuf As Variant, delm As String, offset() As Integer, Optional pExist As Variant)
 
-  'If Sgn(offset) = 0 Then '' [2019-02-15 Fri]
-  If Not Not offset Then
-    'do nothing
-  Else
+  If Sgn(offset) = 0 Then
     If Not IsNull(sBuf) And Not sBuf = "" Then
       prnt = prnt & sBuf & vbNewLine
     End If
@@ -1410,15 +1392,12 @@ Private Sub skipSlides(iSkip() As Integer, ByRef npage0 As Integer, ByRef npage 
     Dim sCurrentFolder As String
     Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",0,mflg) ' [2018-02-06 Tue]
     '''Set hBufs = New Dictionary ' 読み込んだ文字列
-    '' [2019-02-15 Fri]
-    Dim hBufs As Object
     Set hBufs=CreateObject("Scripting.Dictionary")
     Call fileRead2(sNotesFilePath,hBufs)
     Dim nSids()  As Integer
-    Call bufRead_nList(hBufs.Item(SKIP_MARK),nSids(),C_CMM) ' vbTab -> ","    '' [2019-02-15 Fri]
+    Call bufRead_nList(hBufs(SKIP_MARK),nSids(),C_CMM) ' vbTab -> ","
     Dim k As Integer
-    'If Not Sgn(nSids) = 0 Then  ' 2014/03/27  '' [2019-02-15 Fri]
-    If Not Not nSids Then
+    If Not Sgn(nSids) = 0 Then  ' 2014/03/27
       For k = 0 To UBound(nSids)
         iSkip(nSids(k))=1
         isk = isk + 1
@@ -1477,23 +1456,21 @@ Public Sub pageListContents2(GFLAG As Integer)
 
   ' file reading
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   ' 目次として書きだす内容とページ数
   Dim Conts()  As String
   Dim Pagesc() As String
-  If Not IsNull(hBufs.Item(TOCS_MARK)) And Not hBufs.Item(TOCS_MARK) = "" Then           '' [2019-02-15 Fri]
-    Call bufRead_pList(hBufs.Item(TOCS_MARK),Conts(),Pagesc(),C_TBB)
-  ElseIf Not IsNull(hBufs.Item(GTOC_MARK)) And Not hBufs.Item(GTOC_MARK) = "" Then
-    Call bufRead_TOC2pList(hBufs.Item(GTOC_MARK),Conts(),Pagesc(),C_TBB)
+  If Not IsNull(hBufs(TOCS_MARK)) And Not hBufs(TOCS_MARK) = "" Then
+    Call bufRead_pList(hBufs(TOCS_MARK),Conts(),Pagesc(),C_TBB)
+  ElseIf Not IsNull(hBufs(GTOC_MARK)) And Not hBufs(GTOC_MARK) = "" Then
+    Call bufRead_TOC2pList(hBufs(GTOC_MARK),Conts(),Pagesc(),C_TBB)
   End If
 
  ' 目次を書き出さないスライド番号(1-based)
   Dim nSids()  As Integer
-  Call bufRead_nList(hBufs.Item(NOWT_MARK),nSids(),C_CMM) ' vbTab -> ","    '' [2019-02-15 Fri]
+  Call bufRead_nList(hBufs(NOWT_MARK),nSids(),C_CMM) ' vbTab -> ","
 
   ' 書きだす場所
   Dim xPos0  As Integer
@@ -1505,8 +1482,8 @@ Public Sub pageListContents2(GFLAG As Integer)
   wid0   = C_WIDER
   Fsize0 = C_FSIZE
   sizFlg = 0
-  If Not IsNull(hBufs.Item(IFNT_MARK)) And Not hBufs.Item(IFNT_MARK) = "" Then     '' [2019-02-15 Fri]
-    Call bufRead_siz(hBufs.Item(IFNT_MARK),xPos0,wid0,Fsize0)     '' [2019-02-15 Fri]
+  If Not IsNull(hBufs(IFNT_MARK)) And Not hBufs(IFNT_MARK) = "" Then
+    Call bufRead_siz(hBufs(IFNT_MARK),xPos0,wid0,Fsize0)
     sizFlg = 1
   End If
   If GFLAG = 0 Then  ' [2018-02-06 Tue]
@@ -1670,8 +1647,6 @@ Private Sub bufRead_TOC2pList(sBuf As Variant,Conts() As String, Pagesc() As Str
   Next j
 
   '''Set hbef = New Dictionary
-  '' [2019-02-15 Fri]
-  Dim hbef As Object
   Set hbef=CreateObject("Scripting.Dictionary")
   Dim stt() As Integer
   Dim edd() As Integer
@@ -1682,7 +1657,7 @@ Private Sub bufRead_TOC2pList(sBuf As Variant,Conts() As String, Pagesc() As Str
     buff = aBuf(j)    ' 2013/03/29
     If Left$(buff,1) = "*" Then
       ' 動的に変更 2013/03/29
-      ReDim Preserve sForm(j)
+      ReDim Preserve sForm(j) 
       ReDim Preserve stt(j)
       ReDim Preserve edd(j)
       ReDim Preserve Conts(j)
@@ -1705,12 +1680,12 @@ Private Sub bufRead_TOC2pList(sBuf As Variant,Conts() As String, Pagesc() As Str
       Dim st As Integer
       For st = star To hier
         If hbef.Exists(st) Then
-          If Not stt(hbef.Item(st)) = page Then    '' [2019-02-15 Fri]
-            edd(hbef.Item(st))=page-1    '' [2019-02-15 Fri]
+          If Not stt(hbef(st)) = page Then
+            edd(hbef(st))=page-1
           Else
-            edd(hbef.Item(st))=C_EXC    '' [2019-02-15 Fri]
+            edd(hbef(st))=C_EXC
           End If
-          hbef.Item(st) = j    '' [2019-02-15 Fri]
+          hbef(st) = j
         Else
           hbef.Add st,j
         End If
@@ -1723,12 +1698,12 @@ Private Sub bufRead_TOC2pList(sBuf As Variant,Conts() As String, Pagesc() As Str
   star = 1
   For st = star To hier
     If hbef.Exists(st) Then
-      If Not stt(hbef.Item(st)) = page Then    '' [2019-02-15 Fri]
-        edd(hbef.Item(st))=page-1    '' [2019-02-15 Fri]
+      If Not stt(hbef(st)) = page Then
+        edd(hbef(st))=page-1
       Else
-        edd(hbef.Item(st))=C_EXC    '' [2019-02-15 Fri]
+        edd(hbef(st))=C_EXC
       End If
-      hbef.Item(st) = j    '' [2019-02-15 Fri]
+      hbef(st) = j
     Else
       hbef.Add st,j
     End If
@@ -1762,8 +1737,7 @@ Private Sub checkw_slde(nSids() As Integer, fSld() As Integer, npage As Integer)
   For i = 1 To npage
     fSld(i) = 1       ' 基本は 1
   Next i
-  'If Not Sgn(nSids) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not nSids Then
+  If Not Sgn(nSids) = 0 Then
     Dim j As Variant
     For Each j In nSids
       fSld(j) = 0       ' flag が立っている = 0
@@ -1779,8 +1753,7 @@ Private Sub checkd_slde(nSids() As Integer, fSld() As Integer, npage As Integer)
   For i = 1 To npage
     fSld(i) = 0      ' 基本は 0
   Next i
-  'If Not Sgn(nSids) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not nSids Then
+  If Not Sgn(nSids) = 0 Then
     Dim j As Variant
     For Each j In nSids
       fSld(j) = 1      ' flag が立っている = 1
@@ -1793,10 +1766,7 @@ End Sub
 ' (ページ数のリスト)には, offset()及び, pExist() で今考えているページのみで計算しなおしたもの
 Private Sub bufWrit_pList(prnt As String, sBuf As Variant, delm As String, offset() As Integer, Optional pExist As Variant)
 
-  'If Sgn(offset) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not offset Then
-    ' do nothing
-  Else
+  If Sgn(offset) = 0 Then
     If Not IsNull(sBuf) And Not sBuf = "" Then
       prnt = prnt & sBuf & vbNewLine
     End If
@@ -1850,10 +1820,7 @@ End Sub
 ' (ページ数のリスト)を書きだす
 Private Sub bufWrit_nList(prnt As String, sBuf As Variant, delm As String, offset() As Integer, Optional pExist As Variant)
 
-  'If Sgn(offset) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not offset Then
-    ' do nothing
-  Else
+  If Sgn(offset) = 0 Then
     If Not IsNull(sBuf) And Not sBuf = "" Then
       prnt = prnt & sBuf & vbNewLine
     End If
@@ -1993,8 +1960,6 @@ Public Sub pageListHierarchy2(GFLAG As Integer)
 
   ' file reading
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
@@ -2002,18 +1967,17 @@ Public Sub pageListHierarchy2(GFLAG As Integer)
   Dim Conts()  As String
   Dim Pagesc() As String
   ' 2041/04/09 順序の変更
-  '' [2019-02-15 Fri]
-  If Not IsNull(hBufs.Item(TOHI_MARK)) And Not hBufs.Item(TOHI_MARK)="" Then
-    Call bufRead_pList(hBufs.Item(TOHI_MARK),Conts(),Pagesc(),C_TBB)
-  ElseIf Not IsNull(hBufs.Item(GTOC_MARK)) And Not hBufs.Item(GTOC_MARK) = "" Then
-    Call bufRead_TOC2pList(hBufs.Item(GTOC_MARK),Conts(),Pagesc(),C_TBB)
-  ElseIf Not IsNull(hBufs.Item(TOCS_MARK)) And Not hBufs.Item(TOCS_MARK) = "" Then 
-    Call bufRead_pList(hBufs.Item(TOCS_MARK),Conts(),Pagesc(),C_TBB)
+  If Not IsNull(hBufs(TOHI_MARK)) And Not hBufs(TOHI_MARK)="" Then
+    Call bufRead_pList(hBufs(TOHI_MARK),Conts(),Pagesc(),C_TBB)
+  ElseIf Not IsNull(hBufs(GTOC_MARK)) And Not hBufs(GTOC_MARK) = "" Then
+    Call bufRead_TOC2pList(hBufs(GTOC_MARK),Conts(),Pagesc(),C_TBB)
+  ElseIf Not IsNull(hBufs(TOCS_MARK)) And Not hBufs(TOCS_MARK) = "" Then 
+    Call bufRead_pList(hBufs(TOCS_MARK),Conts(),Pagesc(),C_TBB)
   End If
 
    ' 目次を書き出さないスライド番号(1-based)
   Dim nSids()  As Integer
-  Call bufRead_nList(hBufs.Item(NOHI_MARK),nSids(),C_CMM) ' vbTab -> ","    '' [2019-02-15 Fri]
+  Call bufRead_nList(hBufs(NOHI_MARK),nSids(),C_CMM) ' vbTab -> ","
 
   ' 書きだす場所
   Dim xPos0  As Integer
@@ -2025,8 +1989,8 @@ Public Sub pageListHierarchy2(GFLAG As Integer)
   Fsize0 = C_FSIZE
 
   sizFlg = 0
-  If Not IsNull(hBufs.Item(IFHI_MARK)) And Not hBufs.Item(IFHI_MARK) = "" Then    '' [2019-02-15 Fri]
-    Call bufRead_siz(hBufs.Item(IFHI_MARK),xPos0,wid0,Fsize0)    '' [2019-02-15 Fri]
+  If Not IsNull(hBufs(IFHI_MARK)) And Not hBufs(IFHI_MARK) = "" Then
+    Call bufRead_siz(hBufs(IFHI_MARK),xPos0,wid0,Fsize0)
     sizFlg = 1
   End If
   'MsgBox("xPos0=" & xPos0 & vbNewLine & "wid0="  & wid0 & vbNewLine & "Fsize0=" & Fsize0)
@@ -2154,8 +2118,6 @@ Public Sub flipTextForStudy(student As Integer, GFLAG As Integer)
 
   ' file reading
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
@@ -2164,17 +2126,17 @@ Public Sub flipTextForStudy(student As Integer, GFLAG As Integer)
   Dim Pagesc()  As String ' 置き換えるページ数 例: Pagesc(1)=(1,2,3,5)
   Dim flag      As Integer
   flag = 0
-  If Not IsNull(hBufs.Item(FLIP_MARK)) And Not hBufs.Item(FLIP_MARK) = "" Then      '' [2019-02-15 Fri]
-    Call bufRead_exList(hBufs.Item(FLIP_MARK),fString(),tString(),Pagesc(),C_TBB)   '' [2019-02-15 Fri]
+  If Not IsNull(hBufs(FLIP_MARK)) And Not hBufs(FLIP_MARK) = "" Then
+    Call bufRead_exList(hBufs(FLIP_MARK),fString(),tString(),Pagesc(),C_TBB)
     flag = 1
   End If
 
   Dim nSids() As Integer
   Dim aSids() As Integer
-  If Not IsNull(hBufs.Item(DELS_MARK)) And Not hBufs.Item(DELS_MARK) = "" Then    '' [2019-02-15 Fri]
-    Call bufRead_nList(hBufs.Item(DELS_MARK),nSids(),C_CMM)  ' vbTab -> ","    '' [2019-02-15 Fri]
+  If Not IsNull(hBufs(DELS_MARK)) And Not hBufs(DELS_MARK) = "" Then
+    Call bufRead_nList(hBufs(DELS_MARK),nSids(),C_CMM)  ' vbTab -> ","
   Else
-    Call bufRead_nList(hBufs.Item(ALIV_MARK),aSids(),C_CMM)  ' vbTab -> ","    '' [2019-02-15 Fri]
+    Call bufRead_nList(hBufs(ALIV_MARK),aSids(),C_CMM)  ' vbTab -> ","
   End If
 
   Dim npage As Integer
@@ -2183,8 +2145,7 @@ Public Sub flipTextForStudy(student As Integer, GFLAG As Integer)
 
   ' fString が定義されていれば置換する
   ' 2014/04/09
-  'If Not Sgn(fString) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not fString Then
+  If Not Sgn(fString) = 0 Then
     Dim fnum As Integer
     fnum = UBound(fString)
 
@@ -2290,16 +2251,13 @@ Private Sub removeSlide(nSids() As Integer, aSids() As Integer, npage As Integer
   ' 削除する   dSld(i) = 1
   ' 削除しない dSld(i) = 0
   Dim dSld() As Integer
-  'If Not Sgn(nSids) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not nSids Then
+  If Not Sgn(nSids) = 0 Then
     Call checkd_slde(nSids(), dSld(), npage)
-  'ElseIf Not Sgn(aSides) = 0 Then    '' <- bug [2019-02-15 Fri]  '' [2019-02-15 Fri]
-  ElseIf Not Not aSids Then
+  ElseIf Not Sgn(aSides) = 0 Then
     Call checkw_slde(aSids(), dSld(), npage)
   End If
 
-  'If Not Sgn(dSld) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not dSld Then
+  If Not Sgn(dSld) = 0 Then
     Dim i As Integer
     For i = npage To 1 Step -1 ' スライドを削除するとスライド番号が変わるので, 後ろから計算する.
       If dSld(i) = 1 Then      ' 削除
@@ -2315,16 +2273,13 @@ Private Sub watermarkSlide(nSids() As Integer, aSids() As Integer, npage As Inte
   ' 印をつける  dSld(i) = 1
   ' つけない    dSld(i) = 0
   Dim dSld() As Integer
-  'If Not Sgn(nSids) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not nSids Then
+  If Not Sgn(nSids) = 0 Then
     Call checkd_slde(nSids(), dSld(), npage)
-  'ElseIf Not Sgn(aSides) = 0 Then   '' <- bug [2019-02-15 Fri]  '' [2019-02-15 Fri]
-  ElseIf Not Not aSids Then
+  ElseIf Not Sgn(aSides) = 0 Then
     Call checkw_slde(aSids(), dSld(), npage)
   End If
 
-  'If Not Sgn(dSld) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not dSld Then
+  If Not Sgn(dSld) = 0 Then
     Dim i As Integer
     For i = npage To 1 Step -1 ' 削除はしないので番号は変わらないが, removeSlide を踏襲する
       If dSld(i) = 1 Then      ' 印をつける
@@ -2343,10 +2298,7 @@ End Sub
 
 Private Sub bufWrit_exList(prnt As String, sBuf As Variant, delm As String, offset() As Integer, Optional pExist As Variant)
 
-  'If Sgn(offset) = 0 Then  '' [2019-02-15 Fri]
-  If Not Not offset Then
-    ' do nothing
-  Else
+  If Sgn(offset) = 0 Then
     If Not IsNull(sBuf) And Not sBuf = "" Then
       prnt = prnt & sBuf & vbNewLine
     End If
@@ -3051,13 +3003,11 @@ Public Sub source_copy()
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
   '''Set hBufs = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
   ' java file 名の取得
   Dim jFiles() As String 
-  jFiles= Split(hBufs.Item(SOUR_MARK),vbNewLine)    '' [2019-02-15 Fri]
+  jFiles= Split(hBufs(SOUR_MARK),vbNewLine)
 
   Dim i As Integer
   For i= 0 To UBound(jFiles)
@@ -3108,14 +3058,12 @@ Public Sub write_txt_down_hierarchy()
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   Dim aBuf() As String
-  aBuf()=Split(hBufs.Item(GTOC_MARK),vbNewLine)   '' [2019-02-15 Fri]
-
+  aBuf()=Split(hBufs(GTOC_MARK),vbNewLine)
+  
   Dim m As Integer
   m = UBound(aBuf)
 
@@ -3175,13 +3123,11 @@ Public Sub write_txt_ListContents()
   Call notesFilePath(sNotesFilePath,sCurrentFolder,".txt",1,1)
 
   '''Set hBufs   = New Dictionary ' 読み込んだ文字列
-  '' [2019-02-15 Fri]
-  Dim hBufs As Object
   Set hBufs=CreateObject("Scripting.Dictionary")
   Call fileRead2(sNotesFilePath,hBufs)
 
   Dim aBuf() As String
-  aBuf()=Split(hBufs.Item(GTOC_MARK),vbNewLine)   '' [2019-02-15 Fri]
+  aBuf()=Split(hBufs(GTOC_MARK),vbNewLine)
 
   Dim m As Integer
   m = UBound(aBuf)
