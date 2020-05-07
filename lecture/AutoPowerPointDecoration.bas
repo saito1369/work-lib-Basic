@@ -1112,6 +1112,9 @@ Private Sub copySlide(pFr As Presentation, pTo As Presentation, Pagesc As String
   Call sList2iList(Pagesc,Pages(),C_CMM)
   ' copy slide (as usual)
   pFr.Slides.Range(Pages).Copy
+  DoEvents
+  Sleep 10  'copy が終わるまで, 10 ms 待つ
+  DoEvents
   pTo.Slides.Paste
   pFr.Close
 End Sub
@@ -1129,6 +1132,9 @@ Private Sub copySlide_Fmt(pFr As Presentation, pTo As Presentation, Pagesc As St
     Dim sFr As Slide
     Set sFr = pFr.Slides(Pages(q))
     sFr.Copy
+    DoEvents
+    Sleep 10  'copy が終わるまで, 10 ms 待つ
+    DoEvents
     With pTo.Slides.Paste
       .Design      = sFr.Design
       .ColorScheme = sFr.ColorScheme
@@ -1169,6 +1175,10 @@ Private Sub copySlide_Fmt(pFr As Presentation, pTo As Presentation, Pagesc As St
                        (sFr.Background.Fill.Pattern)
           Case Is = msoFillGradient
             Select Case sFr.Background.Fill.GradientColorType
+              Case Is = 4    ' 2020-05-07 この値が 4 のときがある. 調べても出てこないが... TowColorGradient として処理
+                .Background.Fill.TwoColorGradient _
+                           sFr.Background.Fill.GradientStyle, _
+                           sFr.Background.Fill.GradientVariant
               Case Is = msoGradientTwoColors
                 .Background.Fill.TwoColorGradient _
                            sFr.Background.Fill.GradientStyle, _
